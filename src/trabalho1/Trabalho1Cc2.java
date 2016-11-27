@@ -48,7 +48,7 @@ public class Trabalho1Cc2 {
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         gramaticaLAParser parser = new gramaticaLAParser(tokens);
         parser.removeErrorListeners();
-        parser.addErrorListener(new T1ErrorListener(outSintatico));
+        parser.addErrorListener(new AnalisadorSintatico(outSintatico));
         ParseTree tree = null;
         try {
             gramaticaLAParser.ProgramaContext arvore = parser.programa();
