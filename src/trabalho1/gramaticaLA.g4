@@ -70,7 +70,7 @@ chamada_partes : '(' expressao mais_expressao ')'| outros_ident dimensao | ;
 exp_relacional : exp_aritmetica op_opcional;
 op_opcional : op_relacional exp_aritmetica |; 
 op_relacional : '=' | '<>' | '>=' | '<=' | '>' | '<';
-expressao 	: termo_logico outros_termos_logicos;
+expressao : termo_logico outros_termos_logicos;
 op_nao :'nao'| ;
 termo_logico : fator_logico outros_fatores_logicos;
 outros_termos_logicos : 'ou' termo_logico outros_termos_logicos | ;
