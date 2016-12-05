@@ -4,17 +4,28 @@
  */
 package trabalho1;
 
+import java.util.List;
 /**
  *
  * @author daniel
  */
 public class EntradaTabelaDeSimbolos {
     private String nome, tipo;
+    private TabelaDeSimbolos ts;
     
     public EntradaTabelaDeSimbolos(String nome, String tipo) {
         this.nome = nome;
         this.tipo = tipo;
+        this.ts = null;
     }
+    
+    //para registros
+    public EntradaTabelaDeSimbolos(String nome, String tipo, TabelaDeSimbolos ts) {
+        this.nome = nome;
+        this.tipo = tipo;
+        this.ts = ts;
+    }
+    
     
     public String getNome() {
         return nome;
@@ -23,9 +34,15 @@ public class EntradaTabelaDeSimbolos {
     public String getTipo() {
         return tipo;
     }
+
+    public TabelaDeSimbolos getTs() {
+        return ts;
+    }
     
     @Override
     public String toString() {
+        if(getTs() != null)
+            return nome+"("+tipo+")"+ts.toString();
         return nome+"("+tipo+")";
     }
 }

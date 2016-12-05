@@ -35,10 +35,19 @@ public class PilhaDeTabelas {
         }
         return false;
     }
-
+    
+    
+    public boolean existeSimbolo(String nome, String escopo) {
+        for (TabelaDeSimbolos ts : pilha) {
+            if (ts.existeSimbolo(nome, escopo)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     public void desempilhar() {
-        //TabelaDeSimbolos ret = pilha.pop();
-        //Saida.println(ret.toString());
+        pilha.pop();
     }
 
     public List getTodasTabelas() {

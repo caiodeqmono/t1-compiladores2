@@ -25,25 +25,36 @@ import org.antlr.v4.runtime.tree.ParseTree;
 public class Trabalho1Cc2 {
 
     public static void main(String[] args) throws IOException{
+        boolean isTeste = false;
+        
         saidaParser outSintatico = new saidaParser(0);
         saidaParser outSemantico = new saidaParser(1);
         
-        //1.algoritmo_2-2_apostila_LA.txt
-        //2.algoritmo_2-4_apostila_LA.txt
-        //3.algoritmo_3-1_apostila_LA.txt
-        //4.algoritmo_3-2_apostila_LA.txt
-        //5.algoritmo_3-3_apostila_LA.txt
-        //6.algoritmo_4-5_apostila_LA.txt
-        //7.algoritmo_5-3_apostila_LA.txt
-        //8.algoritmo_6-2_apostila_LA.txt
-        //9.algoritmo_6-9_apostila_LA.txt
-        String arquivo = "3.algoritmo_3-1_apostila_LA.txt";        
+        String arquivo;
+        //arquivo = "1.algoritmo_2-2_apostila_LA.txt";
+        //arquivo = "2.algoritmo_2-4_apostila_LA.txt";
+        //arquivo = "3.algoritmo_3-1_apostila_LA.txt";
+        //arquivo = "4.algoritmo_3-2_apostila_LA.txt";
+        //arquivo = "5.algoritmo_3-3_apostila_LA.txt";
+        //arquivo = "6.algoritmo_4-5_apostila_LA.txt";
+        //arquivo = "7.algoritmo_5-3_apostila_LA.txt";
+        //arquivo = "8.algoritmo_6-2_apostila_LA.txt";
+        //arquivo = "9.algoritmo_6-9_apostila_LA.txt":
+        //arquivo = "12.algoritmo_8-3_apostila_LA.txt";
+        arquivo = "18.algoritmo_2-2_apostila_LA.txt";
         
-        //File entrada = new File(args[0]);  
+        
+        ANTLRInputStream input;
+        
+        if(isTeste){
+            input = new ANTLRInputStream(new FileInputStream("/home/caiodeqmono/Desktop/casosDeTesteT1/2.arquivos_com_erros_semanticos/entrada/"+arquivo));
+        }
+        else{
+            File entrada = new File(args[0]);  
+            input = new ANTLRInputStream(new FileInputStream(entrada));
+        }
         
         
-        ANTLRInputStream input = new ANTLRInputStream(new FileInputStream("/home/caiodeqmono/Desktop/casosDeTesteT1/2.arquivos_com_erros_semanticos/entrada/"+arquivo));
-        //ANTLRInputStream input = new ANTLRInputStream(new FileInputStream(entrada));
         gramaticaLALexer lexer = new gramaticaLALexer(input);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         gramaticaLAParser parser = new gramaticaLAParser(tokens);
@@ -67,12 +78,16 @@ public class Trabalho1Cc2 {
         else{
             outSintatico.close();
         }
-            
-        System.out.print(outSintatico.toString()+outSemantico.toString());
-        /*try (Writer writer = new BufferedWriter(new OutputStreamWriter(
-            new FileOutputStream(args[1]), "utf-8"))) {
-            writer.write(outSintatico.toString()+outSemantico.toString());
-        }*/
+        
+        if(isTeste){
+            System.out.print(outSintatico.toString()+outSemantico.toString());
+        }
+        else{
+            try (Writer writer = new BufferedWriter(new OutputStreamWriter(
+                new FileOutputStream(args[1]), "utf-8"))) {
+                writer.write(outSintatico.toString()+outSemantico.toString());
+            }
+        }
         
         
     }

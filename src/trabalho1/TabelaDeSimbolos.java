@@ -24,15 +24,39 @@ public class TabelaDeSimbolos {
         simbolos.add(new EntradaTabelaDeSimbolos(nome,tipo));
     }
     
+    //para registro
+    public void adicionarSimbolo(String nome, String tipo, TabelaDeSimbolos ts) {
+        simbolos.add(new EntradaTabelaDeSimbolos(nome,tipo,ts));
+    }
+    
+    public void adicionarSimbolo(String nome, String tipo, String escopo){
+        for(EntradaTabelaDeSimbolos etds:simbolos) {
+            if(etds.getNome().equals(escopo)){
+                etds.getTs().adicionarSimbolo(nome, tipo);
+            }
+        }
+    }
+    
     public void adicionarSimbolos(List<String> nomes, String tipo) {
         for(String s:nomes) {
             simbolos.add(new EntradaTabelaDeSimbolos(s, tipo));
         }
     }
     
+    public boolean existeSimbolo(String nome, String escopo) {
+        for(EntradaTabelaDeSimbolos etds:simbolos) {
+            if(etds.getTipo().equals("registro")){
+                if(etds.getTs().escopo.equals(escopo) && etds.getTs().existeSimbolo(nome)){
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
     public boolean existeSimbolo(String nome) {
         for(EntradaTabelaDeSimbolos etds:simbolos) {
-            if(etds.getNome().equals(nome)) {
+            if(etds.getNome().equals(nome)){
                 return true;
             }
         }
@@ -41,10 +65,11 @@ public class TabelaDeSimbolos {
     
     @Override
     public String toString() {
-        String ret = "Escopo: "+escopo;
+        String ret = "Escopo: "+escopo+"{";
         for(EntradaTabelaDeSimbolos etds:simbolos) {
             ret += "\n   "+etds;
         }
+        ret += "}\n";
         return ret;
     }
 }
