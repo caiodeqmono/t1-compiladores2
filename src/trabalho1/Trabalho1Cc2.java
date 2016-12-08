@@ -25,29 +25,44 @@ import org.antlr.v4.runtime.tree.ParseTree;
 public class Trabalho1Cc2 {
 
     public static void main(String[] args) throws IOException{
-        boolean isTeste = false;
+        boolean isTeste = true;
         
         saidaParser outSintatico = new saidaParser(0);
         saidaParser outSemantico = new saidaParser(1);
         
-        String arquivo;
-        //arquivo = "1.algoritmo_2-2_apostila_LA.txt";
-        //arquivo = "2.algoritmo_2-4_apostila_LA.txt";
-        //arquivo = "3.algoritmo_3-1_apostila_LA.txt";
-        //arquivo = "4.algoritmo_3-2_apostila_LA.txt";
-        //arquivo = "5.algoritmo_3-3_apostila_LA.txt";
-        //arquivo = "6.algoritmo_4-5_apostila_LA.txt";
-        //arquivo = "7.algoritmo_5-3_apostila_LA.txt";
-        //arquivo = "8.algoritmo_6-2_apostila_LA.txt";
-        //arquivo = "9.algoritmo_6-9_apostila_LA.txt":
-        //arquivo = "12.algoritmo_8-3_apostila_LA.txt";
-        arquivo = "18.algoritmo_2-2_apostila_LA.txt";
+        String arquivo, caminho;
+        //Semantica
+        caminho = "/home/caiodeqmono/Desktop/casosDeTesteT1/2.arquivos_com_erros_semanticos/entrada/";
+        //arquivo = "13.algoritmo_9-4_apostila_LA.txt";
+        arquivo = "15.algoritmo_11-1_apostila_LA.txt";
         
+        //Geracao de Codigo
+        //caminho = "/home/caiodeqmono/Desktop/casosDeTesteT1/3.arquivos_sem_erros/1.entrada/";
+        //arquivo = "1.declaracao_leitura_impressao_inteiro.alg";
+        //arquivo = "2.declaracao_leitura_impressao_real.alg";
+        //arquivo = "3.declaracao_leitura_impressao_literal.alg";
+        //arquivo = "4.declaracao_leitura_impressao_inteiro_literal.alg";
+        //arquivo = "5.declaracao_leitura_impressao_expressao_real.alg";
+        //arquivo = "6.declaracao_leitura_atribuicao_impressao_real.alg";
+        //arquivo = "7.se_entao_impressao.alg";
+        //arquivo = "8.se_entao_senao_impressao.alg";
+        //arquivo = "9.se_entao_expressao_impressao.alg";
+        //arquivo = "10.caso_impressao.alg";
+        //arquivo = "11.constante_caso_impressao.alg";
+        //arquivo = "12.para_declaracao_impressao.alg";
+        //arquivo = "13.enquanto_declaracao_impressao.alg";
+        //arquivo = "14.faca-ate_declaracao_impressao.alg";
+        //arquivo = "15.ponteiro_impressao.alg";        
+        //arquivo = "16.registro_impressao.alg";        
+        //arquivo = "17.registro_tipo_impressao.alg";
+        //arquivo = "18.procedimento_impressao.alg";
+        //arquivo = "19.funcao_dobro_impressao.alg";
+        //arquivo = "20.vetor_repeticao_impressao.alg";
         
         ANTLRInputStream input;
         
         if(isTeste){
-            input = new ANTLRInputStream(new FileInputStream("/home/caiodeqmono/Desktop/casosDeTesteT1/2.arquivos_com_erros_semanticos/entrada/"+arquivo));
+            input = new ANTLRInputStream(new FileInputStream(caminho+arquivo));
         }
         else{
             File entrada = new File(args[0]);  

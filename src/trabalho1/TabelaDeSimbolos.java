@@ -63,6 +63,45 @@ public class TabelaDeSimbolos {
         return false;
     }
     
+    
+    public ArrayList<String> getSimbolos(String escopo){
+        ArrayList<String> nomes = new ArrayList<String>();
+        for(EntradaTabelaDeSimbolos etds:simbolos){
+            if(etds.getTs() != null && etds.getNome().equals(escopo)){
+                return etds.getTs().getSimbolos();
+            }
+        }
+        return null;
+    }
+    
+    
+    public ArrayList<String> getSimbolos(){
+        ArrayList<String> nomes = new ArrayList<String>();
+        for(EntradaTabelaDeSimbolos etds:simbolos){
+            nomes.add(etds.getNome());
+        }
+        return nomes;
+    }
+    
+    
+    public String getTipo(String nomeVar, String escopo) {
+        for(EntradaTabelaDeSimbolos etds:simbolos){
+            if(etds.getTs() != null && etds.getNome().equals(escopo)){
+                return etds.getTs().getTipo(nomeVar);
+            }
+        }
+        return null;
+    }
+    
+    public String getTipo(String nome) {
+        for(EntradaTabelaDeSimbolos etds:simbolos){
+            if(etds.getNome().equals(nome)){
+                return etds.getTipo();
+            }
+        }
+        return null;
+    }
+    
     @Override
     public String toString() {
         String ret = "Escopo: "+escopo+"{";
