@@ -31,14 +31,9 @@ public class Trabalho1Cc2 {
         saidaParser outSemantico = new saidaParser(1);
         
         String arquivo, caminho;
-        //Semantica
-        caminho = "/home/caiodeqmono/Desktop/casosDeTesteT1/2.arquivos_com_erros_semanticos/entrada/";
-        //arquivo = "13.algoritmo_9-4_apostila_LA.txt";
-        arquivo = "15.algoritmo_11-1_apostila_LA.txt";
-        
         //Geracao de Codigo
-        //caminho = "/home/caiodeqmono/Desktop/casosDeTesteT1/3.arquivos_sem_erros/1.entrada/";
-        //arquivo = "1.declaracao_leitura_impressao_inteiro.alg";
+        caminho = "/home/caiodeqmono/Desktop/casosDeTesteT1/3.arquivos_sem_erros/1.entrada/";
+        arquivo = "1.declaracao_leitura_impressao_inteiro.alg";
         //arquivo = "2.declaracao_leitura_impressao_real.alg";
         //arquivo = "3.declaracao_leitura_impressao_literal.alg";
         //arquivo = "4.declaracao_leitura_impressao_inteiro_literal.alg";
@@ -100,7 +95,13 @@ public class Trabalho1Cc2 {
         else{
             try (Writer writer = new BufferedWriter(new OutputStreamWriter(
                 new FileOutputStream(args[1]), "utf-8"))) {
-                writer.write(outSintatico.toString()+outSemantico.toString());
+                String check = outSintatico.toString()+outSemantico.toString();
+                if(check.isEmpty()){
+                    writer.write("codigo");
+                }
+                else{
+                    writer.write(outSintatico.toString()+outSemantico.toString());
+                }
             }
         }
         

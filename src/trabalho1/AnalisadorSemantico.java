@@ -26,14 +26,10 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
         //^' IDENT outros_ident dimensao
         if(ctx.outros_ident() != null){
             if(ctx.outros_ident().identificador() != null){
-                String tipo = pilhaDeTabelas.getTipo(ctx.IDENT().getText()+"."+ctx.outros_ident().identificador().IDENT().getText());
-                if(tipo.equals("real") || tipo.equals("inteiro"))
-                    return "numero";
+                String tipo = pilhaDeTabelas.getTipo("^"+ctx.IDENT().getText()+"."+ctx.outros_ident().identificador().IDENT().getText());
                 return tipo;
             }
-            String tipo = pilhaDeTabelas.getTipo(ctx.IDENT().getText());
-            if(tipo.equals("real") || tipo.equals("inteiro"))
-                return "numero";
+            String tipo = pilhaDeTabelas.getTipo("^"+ctx.IDENT().getText());
             return tipo;
         }
         //IDENT chamada_partes
@@ -41,23 +37,22 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
             if(ctx.chamada_partes().outros_ident() != null){
                 if(ctx.chamada_partes().outros_ident().identificador() != null){
                     String tipo = pilhaDeTabelas.getTipo(ctx.IDENT().getText()+"."+ctx.chamada_partes().outros_ident().identificador().IDENT().getText());
-                    if(tipo.equals("real") || tipo.equals("inteiro"))
-                        return "numero";
                     return tipo;
                 }
                 String tipo = pilhaDeTabelas.getTipo(ctx.IDENT().getText());
-                if(tipo.equals("real") || tipo.equals("inteiro"))
-                    return "numero";
                 return tipo;
+            }
+            if(ctx.chamada_partes().expressao() != null){
+                return pilhaDeTabelas.getTipo(ctx.IDENT().getText());
             }
             
         }
         //NUM_INT
         if(ctx.NUM_INT() != null)
-            return "numero";
+            return "inteiro";
         //NUM_REAL
         if(ctx.NUM_REAL() != null)
-            return "numero";
+            return "real";
         //'(' expressao ')'
         if(ctx.expressao() != null)
             return getTipo(ctx.expressao());
@@ -128,6 +123,8 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
             String tipoOutros = getTipo(ctx.outros_fatores());
             if(tipoFator != null && tipoFator.equals(tipoOutros))
                 return tipoFator;
+            if(tipoFator != null && tipoOutros != null && (tipoFator.equals("real") || tipoFator.equals("inteiro")) && (tipoOutros.equals("real") || tipoOutros.equals("inteiro")))
+                return "real";
             return null;
         }
         return tipoFator;
@@ -140,6 +137,8 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
             String tipoOutros = getTipo(ctx.outros_fatores());
             if(tipoFator != null && tipoFator.equals(tipoOutros))
                 return tipoFator;
+            if(tipoFator != null && tipoOutros != null && (tipoFator.equals("real") || tipoFator.equals("inteiro")) && (tipoOutros.equals("real") || tipoOutros.equals("inteiro")))
+                return "real";
             return null;
         }
         return tipoFator;
@@ -544,7 +543,7 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
         else{
             //caso: funcao
             if(ctx.tipo_estendido() != null){
-                tipoVar = "funcao";
+                tipoVar = ctx.tipo_estendido().tipo_basico_ident().tipo_basico().getText();
             }
             //caso: procedimento
             else{
@@ -617,13 +616,10 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
                 String tipoExpressao = getTipo(ctx.expressao());
                 String tipoVar = pilhaDeTabelas.getTipo(nomeVar);
                 if(tipoVar != null){
-                    if(!tipoVar.equals("^real")&& !tipoVar.equals("^inteiro")){
-                        if(!tipoVar.equals(tipoExpressao))
+                    if(!(tipoVar.equals("real") && tipoExpressao.equals("inteiro"))){
+                        if(!tipoVar.equals("^"+tipoExpressao)){
                             sp.println("Linha "+ctx.IDENT().getSymbol().getLine()+": atribuicao nao compativel para ^"+ nomeVar);
-                    }
-                    else{
-                        if(tipoExpressao == null || !tipoExpressao.equals("numero"))
-                            sp.println("Linha "+ctx.IDENT().getSymbol().getLine()+": atribuicao nao compativel para ^"+ nomeVar);
+                        }
                     }
                 }
             }
@@ -636,27 +632,19 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
                     }
                     String tipoExpressao = getTipo(ctx.chamada_atribuicao().expressao());
                     String tipoVar = pilhaDeTabelas.getTipo(nomeVar);
-                    if(tipoVar != null){
-                        if(!tipoVar.equals("real")&& !tipoVar.equals("inteiro")){
-                            if(!tipoVar.equals(tipoExpressao)){
-                                if(ctx.chamada_atribuicao().dimensao().dimensao() != null){
-                                    sp.println("Linha "+ctx.IDENT().getSymbol().getLine()+": atribuicao nao compativel para "+ nomeVar+ctx.chamada_atribuicao().dimensao().getText());
-                                }
-                                else{
-                                    sp.println("Linha "+ctx.IDENT().getSymbol().getLine()+": atribuicao nao compativel para "+ nomeVar);
-                                }
+                    if(tipoVar != null && tipoExpressao != null){
+                        if(!(tipoVar.equals("real") && tipoExpressao.equals("inteiro")) && !tipoVar.equals(tipoExpressao)){
+                            if(ctx.chamada_atribuicao().dimensao().dimensao() != null){
+                                sp.println("Linha "+ctx.IDENT().getSymbol().getLine()+": atribuicao nao compativel para "+ nomeVar+ctx.chamada_atribuicao().dimensao().getText());
+                            }
+                            else{
+                                sp.println("Linha "+ctx.IDENT().getSymbol().getLine()+": atribuicao nao compativel para "+ nomeVar);
                             }
                         }
-                        else{
-                            if(tipoExpressao == null || !tipoExpressao.equals("numero")){
-                                if(ctx.chamada_atribuicao().dimensao().dimensao() != null){
-                                    sp.println("Linha "+ctx.IDENT().getSymbol().getLine()+": atribuicao nao compativel para "+ nomeVar+ctx.chamada_atribuicao().dimensao().getText());
-                                }
-                                else{
-                                    sp.println("Linha "+ctx.IDENT().getSymbol().getLine()+": atribuicao nao compativel para "+ nomeVar);
-                                }
-                            }
-                        }
+                    }
+                    else{
+                        if(tipoVar != null && tipoExpressao == null)
+                            sp.println("Linha "+ctx.IDENT().getSymbol().getLine()+": atribuicao nao compativel para "+ nomeVar);
                     }
                 }
             }
@@ -736,6 +724,7 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
         if(ctx.chamada_partes() != null){
             String nomeFuncao = ctx.IDENT().getText();
             ArrayList<String> varsFuncao = new ArrayList<String>();
+            //'(' expressao mais_expressao ')'
             if(ctx.chamada_partes().expressao() != null){
                 ArrayList<String> tipoVarsChamada = new ArrayList<String>();
                 gramaticaLAParser.Mais_expressaoContext auxCtx = ctx.chamada_partes().mais_expressao();
@@ -762,12 +751,10 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
                         aux1 = tipoVarsFuncao.remove(0);
                         aux2 = tipoVarsChamada.remove(0);
                         if(aux1 != null && !aux1.equals(aux2)){
-                            //sp.println("Linha "+ctx.IDENT().getSymbol().getLine()+": incompatibilidade de parametros na chamada de "+nomeFuncao);
+                            sp.println("Linha "+ctx.IDENT().getSymbol().getLine()+": incompatibilidade de parametros na chamada de "+nomeFuncao);
                         }
                     }
-                }
-                
-                
+                }   
             }
         }
         
