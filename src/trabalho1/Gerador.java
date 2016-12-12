@@ -12,12 +12,12 @@ import java.util.ArrayList;
  *
  * @author caiodeqmono
  */
-public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {  
+public class Gerador extends gramaticaLABaseVisitor<Void> {  
     PilhaDeTabelas pilhaDeTabelas = new PilhaDeTabelas();
-    saidaParser sp = new saidaParser(1);
+    saidaGerador sg = new saidaGerador();
 
-    public AnalisadorSemantico(saidaParser sp) {
-        this.sp = sp;
+    public Gerador(saidaGerador sg) {
+        this.sg = sg;
     }
     
     public String getTipo(gramaticaLAParser.Parcela_unarioContext ctx) {
@@ -47,10 +47,10 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
         }
         //NUM_INT
         if(ctx.NUM_INT() != null)
-            return "inteiro";
+            return "int";
         //NUM_REAL
         if(ctx.NUM_REAL() != null)
-            return "real";
+            return "float";
         //'(' expressao ')'
         if(ctx.expressao() != null)
             return getTipo(ctx.expressao());
@@ -74,7 +74,7 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
         }
         //CADEIA
         if(ctx.CADEIA() != null)
-            return "literal";
+            return "char";
         
         return null;
     }
@@ -121,8 +121,8 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
             String tipoOutros = getTipo(ctx.outros_fatores());
             if(tipoFator != null && tipoFator.equals(tipoOutros))
                 return tipoFator;
-            if(tipoFator != null && tipoOutros != null && (tipoFator.equals("real") || tipoFator.equals("inteiro")) && (tipoOutros.equals("real") || tipoOutros.equals("inteiro")))
-                return "real";
+            if(tipoFator != null && tipoOutros != null && (tipoFator.equals("float") || tipoFator.equals("int")) && (tipoOutros.equals("float") || tipoOutros.equals("int")))
+                return "float";
             return null;
         }
         return tipoFator;
@@ -135,8 +135,8 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
             String tipoOutros = getTipo(ctx.outros_fatores());
             if(tipoFator != null && tipoFator.equals(tipoOutros))
                 return tipoFator;
-            if(tipoFator != null && tipoOutros != null && (tipoFator.equals("real") || tipoFator.equals("inteiro")) && (tipoOutros.equals("real") || tipoOutros.equals("inteiro")))
-                return "real";
+            if(tipoFator != null && tipoOutros != null && (tipoFator.equals("float") || tipoFator.equals("int")) && (tipoOutros.equals("float") || tipoOutros.equals("int")))
+                return "float";
             return null;
         }
         return tipoFator;
@@ -243,6 +243,8 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
     @Override
     public Void visitPrograma(gramaticaLAParser.ProgramaContext ctx) {
         pilhaDeTabelas.empilhar(new TabelaDeSimbolos("global"));
+        sg.addCommand("#include <stdio.h>\n");
+        sg.addCommand("#include <stdlib.h>\n\n");
         super.visitPrograma(ctx);
         pilhaDeTabelas.desempilhar();
         return null;
@@ -266,12 +268,13 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
             //caso: IDENT dimensao mais_var ':' tipo -> registro            
             if(ctx.variavel().tipo().registro() != null){
                 while(nomeBase.peek() != null){
-                    if(pilhaDeTabelas.topo().existeSimbolo(nomeBase.peek())){
-                        sp.println("Linha "+linhas.peek()+": identificador "+ nomeBase.peek() +" ja declarado anteriormente");
-                    }
-                    else{
-                        pilhaDeTabelas.topo().adicionarSimbolo(nomeBase.peek(), "registro");
-                    }
+                    
+                    sg.addCommand("struct {\n");
+                    sg.enterScope();
+
+
+                    pilhaDeTabelas.topo().adicionarSimbolo(nomeBase.peek(), "reg");
+
                     
                     gramaticaLAParser.VariavelContext auxCtx2 = ctx.variavel().tipo().registro().variavel();
                     gramaticaLAParser.Mais_variaveisContext auxCtx5 = ctx.variavel().tipo().registro().mais_variaveis();
@@ -292,29 +295,36 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
                                 tipoVar += auxCtx2.tipo().tipo_estendido().tipo_basico_ident().tipo_basico().getText();
 
                             nomeVar = nomeBase.peek()+"."+auxCtx2.IDENT().getText();
-                            if(pilhaDeTabelas.topo().existeSimbolo(nomeVar)){
-                                sp.println("Linha "+auxCtx2.IDENT().getSymbol().getLine()+": identificador "+ nomeVar +" ja declarado anteriormente");
+                            
+                            tipoVar = Formatador.tipo(tipoVar);
+                            if(tipoVar.equals("char")){
+                                sg.addCommand(tipoVar+" "+auxCtx2.IDENT().getText()+"[80];\n");
+                            }else{
+                                sg.addCommand(tipoVar+" "+auxCtx2.IDENT().getText()+";\n");
                             }
-                            else{
-                                    pilhaDeTabelas.topo().adicionarSimbolo(nomeVar, tipoVar);
-                            }
+                            pilhaDeTabelas.topo().adicionarSimbolo(nomeVar, tipoVar);
+
 
                             //trata mais_vars
                             gramaticaLAParser.Mais_varContext auxCtx4 = auxCtx2.mais_var();
                             while(auxCtx4.IDENT() != null) {
                                 nomeVar = nomeBase.peek() +"."+ auxCtx4.IDENT().getText();
-                                if(pilhaDeTabelas.topo().existeSimbolo(nomeVar)){
-                                    sp.println("Linha "+auxCtx4.IDENT().getSymbol().getLine()+": identificador "+ nomeVar +" ja declarado anteriormente");
+
+                                if(tipoVar.equals("char")){
+                                    sg.addCommand(tipoVar+" "+auxCtx4.IDENT().getText()+"[80];\n");
+                                }else{
+                                    sg.addCommand(tipoVar+" "+auxCtx4.IDENT().getText()+";\n");
                                 }
-                                else{
-                                    pilhaDeTabelas.topo().adicionarSimbolo(nomeVar, tipoVar);
-                                }
+                                pilhaDeTabelas.topo().adicionarSimbolo(nomeVar, tipoVar);
+                                
                                 auxCtx4 = auxCtx4.mais_var();
                             }
                         }
                         auxCtx2 = auxCtx5.variavel();
                         auxCtx5 = auxCtx5.mais_variaveis();
                     }
+                    sg.exitScope();
+                    sg.addCommand("}"+nomeBase.peek()+";\n");
                     nomeBase.poll();
                     linhas.poll();
                 }
@@ -334,18 +344,14 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
                     if(pilhaDeTabelas.getTipo(nomeTipo) != null && pilhaDeTabelas.getTipo(nomeTipo).equals("registro")){
                         String preTipo = tipoVar;
                         while(nomeBase.peek() != null){
-                            if(pilhaDeTabelas.topo().existeSimbolo(nomeBase.peek())){
-                                sp.println("Linha "+linhas.peek()+": identificador "+ nomeBase.peek() +" ja declarado anteriormente");
+                            sg.addCommand(nomeTipo+" "+nomeBase.peek()+";\n");
+                            pilhaDeTabelas.topo().adicionarSimbolo(nomeBase.peek(), nomeTipo);
+                            for(String var: pilhaDeTabelas.getSimbolos(nomeTipo)){
+                                tipoVar = preTipo + pilhaDeTabelas.topo().getTipo(var, nomeTipo);
+                                nomeVar = nomeBase.peek()+"."+var;
+                                pilhaDeTabelas.topo().adicionarSimbolo(nomeVar, tipoVar);
                             }
-                            else
-                            {
-                                pilhaDeTabelas.topo().adicionarSimbolo(nomeBase.peek(), nomeTipo);
-                                for(String var: pilhaDeTabelas.getSimbolos(nomeTipo)){
-                                    tipoVar = preTipo + pilhaDeTabelas.topo().getTipo(var, nomeTipo);
-                                    nomeVar = nomeBase.peek()+"."+var;
-                                    pilhaDeTabelas.topo().adicionarSimbolo(nomeVar, tipoVar);
-                                }
-                            }
+
                             nomeBase.poll();
                             linhas.poll();
                         }
@@ -356,14 +362,19 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
                 }
                 if(ctx.variavel().tipo().tipo_estendido().tipo_basico_ident().tipo_basico() != null)
                     tipoVar += ctx.variavel().tipo().tipo_estendido().tipo_basico_ident().tipo_basico().getText();
+                
+                tipoVar = Formatador.tipo(tipoVar);
 
                 while(nomeBase.peek() != null){
-                    if(pilhaDeTabelas.topo().existeSimbolo(nomeBase.peek())){
-                        sp.println("Linha "+linhas.peek()+": identificador "+ nomeBase.peek() +" ja declarado anteriormente");
+                    if(tipoVar.equals("char")){
+                        sg.addCommand(tipoVar+" "+nomeBase.peek()+"[80];");
                     }
                     else{
-                        pilhaDeTabelas.topo().adicionarSimbolo(nomeBase.peek(), tipoVar);
+                    sg.addCommand(tipoVar+" "+nomeBase.peek()+ctx.variavel().dimensao().getText()+";");
                     }
+                    sg.nl();
+                    pilhaDeTabelas.topo().adicionarSimbolo(nomeBase.peek(), tipoVar);
+                    
                     nomeBase.poll();
                     linhas.poll();
                 }
@@ -373,7 +384,7 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
             //ja verifica antes para os dois casos
             String nomeVar = ctx.IDENT().getText();
             if(pilhaDeTabelas.topo().existeSimbolo(nomeVar)){
-                sp.println("Linha "+ctx.IDENT().getSymbol().getLine()+": identificador "+ nomeVar +" ja declarado anteriormente");
+                //sg.println("Linha "+ctx.IDENT().getSymbol().getLine()+": identificador "+ nomeVar +" ja declarado anteriormente");
             }
             else{
                 //caso: 'constante' IDENT ':' tipo_basico '=' valor_constante
@@ -382,26 +393,26 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
                     boolean isTiposIguais = false;
 
                     if(ctx.valor_constante().CADEIA() != null){
-                        if(tipoVar.equals("literal"))
+                        if(tipoVar.equals("char"))
                             isTiposIguais = true;
                     }
                     else if(ctx.valor_constante().NUM_INT() != null){
-                        if(tipoVar.equals("inteiro") || tipoVar.equals("real"))
+                        if(tipoVar.equals("int") || tipoVar.equals("float"))
                             isTiposIguais = true;
                     }
                     else if(ctx.valor_constante().NUM_REAL() != null){
-                        if(tipoVar.equals("real"))
+                        if(tipoVar.equals("float"))
                             isTiposIguais = true;
                     }
                     else{
-                        if(tipoVar.equals("logico"))
+                        if(tipoVar.equals("int"))
                             isTiposIguais = true;
                     }
 
                     if(isTiposIguais){
                         pilhaDeTabelas.topo().adicionarSimbolo(nomeVar, tipoVar);
                     }else{
-                        sp.println("Linha "+ctx.IDENT().getSymbol().getLine()+": atribuicao nao compativel para "+nomeVar);
+                        sg.addCommand("#define "+nomeVar+" "+ctx.valor_constante().getText()+"\n");
                     }
                 }
                 //caso: 'tipo' IDENT ':' tipo;
@@ -411,6 +422,9 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
                     //caso: registro
                     if(ctx.tipo().registro() != null){
                         pilhaDeTabelas.topo().adicionarSimbolo(nomeTipo, "registro", new TabelaDeSimbolos(nomeTipo));
+                        
+                        sg.addCommand("typedef struct{\n");
+                        sg.enterScope();
                         
                         gramaticaLAParser.VariavelContext auxCtx = ctx.tipo().registro().variavel();
                         gramaticaLAParser.Mais_variaveisContext auxCtx2 = ctx.tipo().registro().mais_variaveis();
@@ -432,18 +446,29 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
                             //verifica se ja existe
                             nomeVar = auxCtx.IDENT().getText();
                             if(pilhaDeTabelas.topo().existeSimbolo(nomeVar)){
-                                sp.println("Linha "+auxCtx.IDENT().getSymbol().getLine()+": identificador "+ nomeVar +" ja declarado anteriormente");
+                                //sg.println("Linha "+auxCtx.IDENT().getSymbol().getLine()+": identificador "+ nomeVar +" ja declarado anteriormente");
                             }
                             else{
+                                tipoVar = Formatador.tipo(tipoVar);
+                                
                                 pilhaDeTabelas.topo().adicionarSimbolo(nomeVar, tipoVar, nomeTipo);
+                                
                             }
+                            
+                            if(tipoVar.equals("char")){
+                                sg.addCommand(tipoVar+" "+nomeVar+"[80];\n");
+                            }
+                            else{
+                                sg.addCommand(tipoVar+" "+nomeVar+";\n");
+                            }
+                            
                             
                             //verifica mais_vars
                             gramaticaLAParser.Mais_varContext auxCtx4 = auxCtx.mais_var();
                             while(auxCtx4.mais_var() != null){
                                 nomeVar = auxCtx4.IDENT().getText();
                                 if(pilhaDeTabelas.topo().existeSimbolo(nomeVar)){
-                                    sp.println("Linha "+auxCtx4.IDENT().getSymbol().getLine()+": identificador "+ nomeVar +" ja declarado anteriormente");
+                                    //sg.println("Linha "+auxCtx4.IDENT().getSymbol().getLine()+": identificador "+ nomeVar +" ja declarado anteriormente");
                                 }
                                 else{
                                     pilhaDeTabelas.topo().adicionarSimbolo(nomeVar, tipoVar, nomeTipo);
@@ -453,6 +478,8 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
                             auxCtx = auxCtx2.variavel();
                             auxCtx2 = auxCtx2.mais_variaveis();
                         }
+                        sg.exitScope();
+                        sg.addCommand("}"+nomeTipo+";\n");
                     }
                     //caso: tipo_estendido
                     else{
@@ -480,8 +507,9 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
     
     @Override public Void visitTipo_basico_ident(gramaticaLAParser.Tipo_basico_identContext ctx) { 
         if(ctx.IDENT() != null){
-            if(!pilhaDeTabelas.existeSimbolo(ctx.IDENT().getText()))
-                sp.println("Linha "+ctx.IDENT().getSymbol().getLine()+": tipo " + ctx.IDENT().getText() + " nao declarado");
+            if(!pilhaDeTabelas.existeSimbolo(ctx.IDENT().getText())){
+                //sg.println("Linha "+ctx.IDENT().getSymbol().getLine()+": tipo " + ctx.IDENT().getText() + " nao declarado");
+            }
         }
         super.visitChildren(ctx);
         return null;
@@ -509,7 +537,7 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
                     }
                 }
                 if(!pilhaDeTabelas.existeSimbolo(nomeVar)){
-                    sp.println("Linha "+ctx.parcela_unario().IDENT().getSymbol().getLine()+": identificador "+ nomeVar +" nao declarado");
+                    //sg.println("Linha "+ctx.parcela_unario().IDENT().getSymbol().getLine()+": identificador "+ nomeVar +" nao declarado");
                 }
             }
         }
@@ -522,7 +550,7 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
                     nomeVar += "."+ctx.parcela_nao_unario().outros_ident().identificador().IDENT().getText();
                 }
                 if(!pilhaDeTabelas.existeSimbolo(nomeVar)){
-                    sp.println("Linha "+ctx.parcela_nao_unario().IDENT().getSymbol().getLine()+": identificador "+ nomeVar +" nao declarado");
+                    //sg.println("Linha "+ctx.parcela_nao_unario().IDENT().getSymbol().getLine()+": identificador "+ nomeVar +" nao declarado");
                 }
             }
         }
@@ -536,22 +564,30 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
         String tipoVar;
         
         if(pilhaDeTabelas.topo().existeSimbolo(nomeVar)){
-            sp.println("Linha "+ctx.IDENT().getSymbol().getLine()+": identificador "+ nomeVar +" ja declarado anteriormente");
+            //sg.println("Linha "+ctx.IDENT().getSymbol().getLine()+": identificador "+ nomeVar +" ja declarado anteriormente");
         }
         else{
             //caso: funcao
             if(ctx.tipo_estendido() != null){
                 tipoVar = ctx.tipo_estendido().tipo_basico_ident().tipo_basico().getText();
+                tipoVar = Formatador.tipo(tipoVar);
             }
             //caso: procedimento
             else{
                 tipoVar = "procedimento";
                 String comandos = ctx.comandos().getText();
                 if(comandos.contains("retorne")){
-                    sp.println("Linha "+ctx.comandos().getStop().getLine()+": comando retorne nao permitido nesse escopo");
+                    //sg.println("Linha "+ctx.comandos().getStop().getLine()+": comando retorne nao permitido nesse escopo");
                 }
             }
             pilhaDeTabelas.topo().adicionarSimbolo(nomeVar, tipoVar, new TabelaDeSimbolos(nomeVar));
+            
+            if(tipoVar.equals("procedimento")){
+                sg.addCommand("void "+nomeVar+"(");
+            }
+            else{
+                sg.addCommand(tipoVar+" "+nomeVar+"(");
+            }
             
             String escopo = nomeVar;
             
@@ -566,14 +602,25 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
                     if(auxCtx.tipo_estendido().tipo_basico_ident().tipo_basico() != null)
                         tipoVar = auxCtx.tipo_estendido().tipo_basico_ident().tipo_basico().getText();
                     
+                    tipoVar = Formatador.tipo(tipoVar);
                     pilhaDeTabelas.topo().adicionarSimbolo(nomeVar, tipoVar, escopo);
+                    if(tipoVar.equals("char")){
+                        sg.addCode(tipoVar+"* "+nomeVar);
+                    }
+                    else{
+                        sg.addCode(tipoVar+" "+nomeVar);
+                    }
                     
                     auxCtx = auxCtx.mais_parametros().parametro();
                 }
             }
+            sg.addCode("){\n");
+            sg.enterScope();
             
             pilhaDeTabelas.empilhar(new TabelaDeSimbolos(nomeVar));
             super.visitChildren(ctx);
+            sg.exitScope();
+            sg.addCommand("}\n");
             pilhaDeTabelas.desempilhar();
             return null;
         }
@@ -582,11 +629,67 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
     }
     
     @Override public Void visitCmd(gramaticaLAParser.CmdContext ctx) { 
-        //caso leia
+        //caso 'se' expressao 'entao' comandos senao_opcional 'fim_se'
+        if(ctx.getText().contains("fim_se")){
+            String conteudo = ctx.expressao().getText();
+            sg.addCommand("if("+Formatador.format(conteudo)+"){\n");
+            sg.enterScope();
+            super.visitComandos(ctx.comandos());
+            sg.exitScope();
+            sg.addCommand("}\n");
+            if(ctx.senao_opcional().comandos() != null){
+                sg.addCommand("else{\n");
+                sg.enterScope();
+                super.visitComandos(ctx.senao_opcional().comandos());
+                sg.exitScope();
+                sg.addCommand("}\n");
+            }
+            return null;
+        }
+        
+        //caso 'para' IDENT '<-' exp_aritmetica 'ate' exp_aritmetica 'faca' comandos 'fim_para'
+        if(ctx.getText().contains("fim_para")){
+            sg.addCommand("for(int i = "+ctx.exp_aritmetica(0).getText()+"; i <= "+ctx.exp_aritmetica(1).getText()+"; i++){\n");
+            sg.enterScope();
+            super.visitComandos(ctx.comandos());
+            sg.exitScope();
+            sg.addCommand("}\n");
+            return null;
+        }
+        
+        //caso 'enquanto' expressao 'faca' comandos 'fim_enquanto'
+        if(ctx.getText().contains("fim_enquanto")){
+            sg.addCommand("while("+ctx.expressao().getText()+"){\n");
+            sg.enterScope();
+            super.visitComandos(ctx.comandos());
+            sg.exitScope();
+            sg.addCommand("}\n");
+            return null;
+        }
+        
+        //caso 'faca' comandos 'ate' expressao
+        if(ctx.getText().contains("ate") && ctx.expressao() != null){
+            sg.addCommand("do{\n");
+            sg.enterScope();
+            super.visitComandos(ctx.comandos());
+            sg.exitScope();
+            sg.addCommand("}while("+Formatador.format(ctx.expressao().getText())+");\n");
+            return null;
+        }
+        
+        //caso 'leia' '(' identificador mais_ident ')'
         if(ctx.identificador() != null){
             String nomeVar = ctx.identificador().IDENT().getText();
-            if(!pilhaDeTabelas.topo().existeSimbolo(nomeVar)){
-                    sp.println("Linha "+ctx.identificador().IDENT().getSymbol().getLine()+": identificador "+ nomeVar +" nao declarado");
+            String tipoVar = pilhaDeTabelas.getTipo(nomeVar);
+            tipoVar = Formatador.tipo(tipoVar);
+            
+            //caso char
+            if(tipoVar.equals("char")){
+                sg.addCommand("gets("+nomeVar);
+            }
+            //caso int e float
+            else{
+            sg.addCommand("scanf(\""+Formatador.ioFormat(tipoVar)+"\", &"+ nomeVar);
             }
             gramaticaLAParser.Mais_identContext auxCtx = ctx.mais_ident();
             while(auxCtx.identificador() != null){
@@ -597,12 +700,91 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
                 }
                 
                 if(!pilhaDeTabelas.topo().existeSimbolo(nomeVar)){
-                    sp.println("Linha "+auxCtx.identificador().IDENT().getSymbol().getLine()+": identificador "+ nomeVar +" nao declarado");
+                    //sg.println("Linha "+auxCtx.identificador().IDENT().getSymbol().getLine()+": identificador "+ nomeVar +" nao declarado");
                 }
                 auxCtx = auxCtx.mais_ident();
             }
+            
+            sg.addCode(");");
+            sg.nl();
         }
 
+        //caso 'escreva' '(' expressao mais_expressao ')'
+        if(ctx.mais_expressao() != null){
+            String conteudo = ctx.expressao().getText()+ctx.mais_expressao().getText();
+            
+            //caso tenha aspas
+            if(ctx.getText().contains("\"")){
+                String tipoVar = pilhaDeTabelas.getTipo(ctx.expressao().getText()+ctx.mais_expressao().getText());
+                //caso seja apenas uma variavel
+                if(tipoVar != null){
+                    tipoVar = Formatador.tipo(tipoVar);
+                    
+                    sg.addCommand("printf(\""+Formatador.ioFormat(tipoVar)+"\","+ctx.expressao().getText()+");");
+                }
+                else{
+                    //caso tenha texto e variaveis
+                    if(ctx.getText().contains(",")){
+                        String[] text = (conteudo).split(",");
+                        int i = 0;
+                        while(i < text.length){
+                            if(text[i].contains("\"")){
+                                sg.addCommand("printf("+text[i]+");\n");
+                            }
+                            else{
+                                tipoVar = Formatador.tipo(pilhaDeTabelas.getTipo(text[i]));
+                                sg.addCommand("printf(\""+Formatador.ioFormat(tipoVar)+"\", "+text[i]+");\n");
+                            }
+                            i++;
+                        }
+                    }
+                    //caso soh texto
+                    else{
+                        sg.addCommand("printf("+conteudo+");");
+                    }
+
+                }
+            }
+            else{
+                
+                if(conteudo.contains("+")){
+
+                    String[] nomeVar = conteudo.split("\\+");
+
+                    String tipoVar = pilhaDeTabelas.getTipo(nomeVar[0]);
+                    sg.addCommand("printf(\""+Formatador.ioFormat(tipoVar)+"\","+conteudo+");\n");
+                }
+                else if(conteudo.contains("(")){
+                    
+                    String[] nomeFuncao = conteudo.split("\\(");
+                    
+                    String tipoVar = pilhaDeTabelas.getTipo(nomeFuncao[0]);
+                    sg.addCommand("printf(\""+Formatador.ioFormat(tipoVar)+"\","+conteudo+");\n");
+                }
+                else if(conteudo.contains("[")){
+                    String[] nomeVar = conteudo.split("\\[");
+
+                    String tipoVar = pilhaDeTabelas.getTipo(nomeVar[0]);
+                    sg.addCommand("printf(\""+Formatador.ioFormat(tipoVar)+"\","+conteudo+");\n");
+                }
+                else{
+                    String tipoVar = pilhaDeTabelas.getTipo(conteudo);
+                    sg.addCommand("printf(\""+Formatador.ioFormat(tipoVar)+"\","+conteudo+");\n");
+                }
+                
+            }
+        }
+        
+        //caso 'caso' exp_aritmetica 'seja' selecao senao_opcional 'fim_caso'
+        if(ctx.getText().contains("fim_caso")){
+            sg.addCommand("switch ("+ctx.exp_aritmetica(0).getText()+") {\n");
+            sg.enterScope();
+            super.visitChildren(ctx);
+            sg.exitScope();
+            sg.addCommand("}\n");
+            return null;
+        }
+        
         //caso tenha IDENT
         if(ctx.IDENT() != null){
             String nomeVar = ctx.IDENT().getText();
@@ -613,13 +795,7 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
                 }
                 String tipoExpressao = getTipo(ctx.expressao());
                 String tipoVar = pilhaDeTabelas.getTipo(nomeVar);
-                if(tipoVar != null){
-                    if(!(tipoVar.equals("real") && tipoExpressao.equals("inteiro"))){
-                        if(!tipoVar.equals("^"+tipoExpressao)){
-                            sp.println("Linha "+ctx.IDENT().getSymbol().getLine()+": atribuicao nao compativel para ^"+ nomeVar);
-                        }
-                    }
-                }
+                sg.addCommand(Formatador.format(ctx.getText())+";\n");
             }
             
             if(ctx.chamada_atribuicao() != null){
@@ -630,28 +806,72 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
                     }
                     String tipoExpressao = getTipo(ctx.chamada_atribuicao().expressao());
                     String tipoVar = pilhaDeTabelas.getTipo(nomeVar);
-                    if(tipoVar != null && tipoExpressao != null){
-                        if(!(tipoVar.equals("real") && tipoExpressao.equals("inteiro")) && !tipoVar.equals(tipoExpressao)){
-                            if(ctx.chamada_atribuicao().dimensao().dimensao() != null){
-                                sp.println("Linha "+ctx.IDENT().getSymbol().getLine()+": atribuicao nao compativel para "+ nomeVar+ctx.chamada_atribuicao().dimensao().getText());
-                            }
-                            else{
-                                sp.println("Linha "+ctx.IDENT().getSymbol().getLine()+": atribuicao nao compativel para "+ nomeVar);
-                            }
-                        }
+                    
+                    if(tipoVar.equals("char")){
+                        sg.addCommand("strcpy("+nomeVar+","+ctx.chamada_atribuicao().expressao().getText()+");\n");
                     }
                     else{
-                        if(tipoVar != null && tipoExpressao == null)
-                            sp.println("Linha "+ctx.IDENT().getSymbol().getLine()+": atribuicao nao compativel para "+ nomeVar);
+                        sg.addCommand(Formatador.format(ctx.getText())+";\n");
                     }
+                    
+                }
+                //caso IDENT '(' argumentos_opcional ')'
+                else{
+                    sg.addCommand(ctx.getText()+";\n");
                 }
             }
             
             if(!pilhaDeTabelas.topo().existeSimbolo(nomeVar)){
-                sp.println("Linha "+ctx.IDENT().getSymbol().getLine()+": identificador "+ nomeVar +" nao declarado");
+                //sg.println("Linha "+ctx.IDENT().getSymbol().getLine()+": identificador "+ nomeVar +" nao declarado");
             }
         }
+        
+        //caso 'retorne' expressao;
+        if(ctx.getText().contains("retorne")){
+            String conteudo = ctx.getText().replace("retorne", "return ");
+            sg.addCommand(conteudo+";\n");
+        }
+        
         super.visitChildren(ctx);
+        return null;
+    }
+    
+    @Override public Void visitSenao_opcional(gramaticaLAParser.Senao_opcionalContext ctx) { 
+        sg.addCommand("default:\n");
+        sg.enterScope();
+        super.visitChildren(ctx); 
+        sg.addCode("\n");
+        sg.exitScope();
+        return null;
+    }
+    
+    @Override public Void visitSelecao(gramaticaLAParser.SelecaoContext ctx) { 
+        //caso tenha intervalo
+        if(ctx.constantes().numero_intervalo().intervalo_opcional().NUM_INT() != null){
+            int i = Integer.parseInt(ctx.constantes().numero_intervalo().NUM_INT().getText());
+            int j = Integer.parseInt(ctx.constantes().numero_intervalo().intervalo_opcional().NUM_INT().getText());
+            for(i=i; i < j; i++){
+                sg.addCommand("case "+i+": \n");
+            }
+            sg.addCommand("case "+j+":\n");
+            sg.enterScope();
+            super.visitComandos(ctx.comandos()); 
+            sg.addCode("\n");
+            sg.addCommand("break;\n");
+            sg.exitScope();
+        }
+        else{
+        //caso apenas um numero
+            sg.addCommand("case "+ctx.constantes().numero_intervalo().NUM_INT().getText()+":\n");
+            sg.enterScope();
+            super.visitComandos(ctx.comandos()); 
+            sg.addCode("\n");
+            sg.addCommand("break;\n");
+            sg.exitScope();
+        }
+        
+        super.visitMais_selecao(ctx.mais_selecao());
+        
         return null;
     }
     
@@ -679,7 +899,7 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
             String nomeTipo = tipos.peek();
             if(pilhaDeTabelas.getTipo(nomeTipo) != null && pilhaDeTabelas.getTipo(nomeTipo).equals("registro")){
                 if(pilhaDeTabelas.topo().existeSimbolo(nomeBase.peek())){
-                    sp.println("Linha "+linhas.peek()+": identificador "+ nomeBase.peek() +" ja declarado anteriormente");
+                    //sg.println("Linha "+linhas.peek()+": identificador "+ nomeBase.peek() +" ja declarado anteriormente");
                 }
                 else
                 {
@@ -708,11 +928,15 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
         String comandos = ctx.comandos().getText();
         
         if(comandos.contains("retorne")){
-            sp.println("Linha "+ctx.comandos().getStop().getLine()+": comando retorne nao permitido nesse escopo");
+            //sg.println("Linha "+ctx.comandos().getStop().getLine()+": comando retorne nao permitido nesse escopo");
         }
-        
-        
+        sg.addCommand("int main() {\n");
+        sg.enterScope();
         super.visitChildren(ctx);
+        sg.addCommand("return 0;\n");
+        sg.exitScope();
+        sg.addCommand("}");
+        
         return null;
     }
     
@@ -741,7 +965,7 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
                 }
                 
                 if(tipoVarsFuncao.size() != tipoVarsChamada.size()){
-                    sp.println("Linha "+ctx.IDENT().getSymbol().getLine()+": incompatibilidade de parametros na chamada de "+nomeFuncao);
+                    //sg.println("Linha "+ctx.IDENT().getSymbol().getLine()+": incompatibilidade de parametros na chamada de "+nomeFuncao);
                 }
                 else{
                     String aux1, aux2;
@@ -749,7 +973,7 @@ public class AnalisadorSemantico extends gramaticaLABaseVisitor<Void> {
                         aux1 = tipoVarsFuncao.remove(0);
                         aux2 = tipoVarsChamada.remove(0);
                         if(aux1 != null && !aux1.equals(aux2)){
-                            sp.println("Linha "+ctx.IDENT().getSymbol().getLine()+": incompatibilidade de parametros na chamada de "+nomeFuncao);
+                            //sg.println("Linha "+ctx.IDENT().getSymbol().getLine()+": incompatibilidade de parametros na chamada de "+nomeFuncao);
                         }
                     }
                 }   
